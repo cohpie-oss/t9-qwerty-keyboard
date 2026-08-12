@@ -1,11 +1,38 @@
 # T9 QWERTY Keyboard
 
-An Android system keyboard based on the supplied layout: number keys carry QWERTY letter groups (`1=QWE`, `2=RTU`, …, `9=NM`). In word-search mode one number per group filters suggestions; exact completed words are sorted first. For example, `435397 35 86486 124227 62451 93 831` produces “sphinx of black quartz judge my vow”. (The original brief’s final digits for `quartz` and `my` conflict with its printed key layout; this project follows the layout.)
+T9 QWERTY Keyboard is an offline Android keyboard that combines a compact, connected-key T9 layout with an optional full QWERTY layout. It is designed for fast thumb typing while retaining familiar QWERTY letter positions.
 
-Tap the lock button to switch to a **normal separated-letter keyboard**. In that mode, tap `h` then `i` directly. Tap LOCK again to return to T9 word search.
+## Features
 
-The app bundles an offline American-English word list generated from [ESDB / SCOWL](https://github.com/en-wl/wordlist), including its vetted inflections and spelling information. See `app/src/main/assets/DICTIONARY_LICENSE.txt` for source and license details.
+- Connected-key T9 word search based on custom QWERTY letter groups.
+- A normal, separated-key QWERTY mode, toggled with a triple tap on Space.
+- Offline English word suggestions, generated from the ESDB / SCOWL word list.
+- Suggestions ranked by words you use most often.
+- Capitalisation, optional automatic sentence capitals, and optional double-space full stops.
+- Punctuation keyboard, long-press punctuation menu, and repeat backspace.
+- Adjustable keyboard size and optional dark theme.
+- Suggestion management: long-press a suggestion to hide it, then restore hidden suggestions from Settings.
 
-## Build and install
+## Privacy
 
-Follow [SETUP.txt](SETUP.txt). This is a native Android IME because an Expo/React Native app cannot register as Android’s system keyboard by itself.
+The keyboard works entirely on-device. It does not request Internet access and does not send typed text, word suggestions, or usage rankings to a server.
+
+Android displays a standard warning when enabling any third-party keyboard because keyboards can receive the text you type. Install it only from a source you trust.
+
+## Install
+
+For build, installation, and tester instructions, see [SETUP.txt](SETUP.txt).
+
+The latest test APK is available as `T9QwertyKeyboard-debug.apk` in this repository.
+
+## Dictionary
+
+The bundled American-English dictionary is generated from [ESDB / SCOWL](https://github.com/en-wl/wordlist). See [DICTIONARY_LICENSE.txt](app/src/main/assets/DICTIONARY_LICENSE.txt) for licensing details.
+
+## Development
+
+This is a native Android Input Method Editor (IME) project. Open the repository in Android Studio and use the Gradle wrapper to build it:
+
+```powershell
+.\gradlew.bat assembleDebug
+```
