@@ -2,6 +2,10 @@
 
 All notable changes to T9 QWERTY Keyboard are recorded here.
 
+## Unreleased
+
+- Added a Settings shortcut for filing a GitHub bug report with device and keyboard-setting details prefilled.
+
 ## 1.1.1 — 2026-08-12
 
 - Made compact mode a uniform 3×3 T9 grid with separate controls.

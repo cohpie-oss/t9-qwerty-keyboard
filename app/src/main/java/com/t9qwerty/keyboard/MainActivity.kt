@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
+import android.net.Uri
 import android.view.Gravity
 import android.widget.Button
 import android.widget.CheckBox
@@ -27,6 +28,24 @@ class MainActivity : Activity() {
         box.addView(Button(this).apply { text = "2. Choose T9 QWERTY Keyboard"; setOnClickListener {
             val id = ComponentName(this@MainActivity, T9InputMethodService::class.java).flattenToShortString()
             startActivity(Intent(Settings.ACTION_INPUT_METHOD_SUBTYPE_SETTINGS).putExtra(Settings.EXTRA_INPUT_METHOD_ID, id))
+        } })
+        box.addView(Button(this).apply { text = "Report a bug on GitHub"; setOnClickListener {
+            val report = """
+                ## What happened?
+
+                <!-- Please describe the problem and the steps that caused it. -->
+
+                ## Device details
+
+                - App version: ${packageManager.getPackageInfo(packageName, 0).versionName}
+                - Android: ${android.os.Build.VERSION.RELEASE}
+                - Device: ${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL}
+                - Dark keyboard: ${settings.getBoolean("dark_keyboard", false)}
+                - Compact layout: ${settings.getBoolean("compact_layout", false)} (${settings.getString("compact_alignment", "center")})
+                - Number row: ${settings.getBoolean("show_number_row", true)}
+            """.trimIndent()
+            val url = Uri.parse("https://github.com/cohpie-oss/t9-qwerty-keyboard/issues/new?title=" + Uri.encode("Bug report: ") + "&body=" + Uri.encode(report))
+            startActivity(Intent(Intent.ACTION_VIEW, url))
         } })
         val sizeLabel = TextView(this).apply { text = "Keyboard size: ${settings.getInt("keyboard_scale", 100)}%"; textSize = 18f }
         box.addView(sizeLabel)
