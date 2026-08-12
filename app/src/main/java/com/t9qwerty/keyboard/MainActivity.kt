@@ -23,7 +23,9 @@ class MainActivity : Activity() {
         val pad = (24 * resources.displayMetrics.density).toInt()
         val settings = getSharedPreferences("keyboard_settings", MODE_PRIVATE)
         val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(pad, pad, pad, pad); gravity = Gravity.CENTER_VERTICAL }
-        box.addView(TextView(this).apply { text = "T9 QWERTY Keyboard\n\nA native Android keyboard with connected T9 search keys and an optional normal separated-key layout."; textSize = 20f })
+        val version = packageManager.getPackageInfo(packageName, 0).versionName
+        box.addView(TextView(this).apply { text = "T9 QWERTY Keyboard\n\nVersion $version\nA native Android keyboard with connected T9 search keys and an optional normal separated-key layout."; textSize = 20f })
+        box.addView(Button(this).apply { text = "View update notes"; setOnClickListener { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/cohpie-oss/t9-qwerty-keyboard/blob/main/CHANGELOG.md"))) } })
         box.addView(Button(this).apply { text = "1. Enable keyboard in Android Settings"; setOnClickListener { startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS)) } })
         box.addView(Button(this).apply { text = "2. Choose T9 QWERTY Keyboard"; setOnClickListener {
             val id = ComponentName(this@MainActivity, T9InputMethodService::class.java).flattenToShortString()
@@ -37,7 +39,7 @@ class MainActivity : Activity() {
 
                 ## Device details
 
-                - App version: ${packageManager.getPackageInfo(packageName, 0).versionName}
+                - App version: $version
                 - Android: ${android.os.Build.VERSION.RELEASE}
                 - Device: ${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL}
                 - Dark keyboard: ${settings.getBoolean("dark_keyboard", false)}

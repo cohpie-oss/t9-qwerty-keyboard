@@ -2,6 +2,14 @@
 
 All notable changes to T9 QWERTY Keyboard are recorded here.
 
+## 1.1.2 — 2026-08-12
+
+- Added visible, light-number hints and long-press number entry when the number row is hidden.
+- Made the normal QWERTY top row map to `1`–`0` on long press when numbers are hidden.
+- Removed duplicate punctuation and Return keys from compact mode.
+- Added the app version and a link to update notes in Settings.
+- Adopted versioned APK release filenames.
+
 ## Unreleased
 
 - Added a Settings shortcut for filing a GitHub bug report with device and keyboard-setting details prefilled.

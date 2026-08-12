@@ -91,16 +91,16 @@ class T9InputMethodService : InputMethodService() {
     private fun groupRow(groups: List<Pair<String, Pair<Char, Float>>>, controls: Boolean = false) = LinearLayout(this).apply {
         orientation = LinearLayout.HORIZONTAL
         if (controls) addView(key("⇧", 'U'), LinearLayout.LayoutParams(0, dp(29), 1.2f).apply { setMargins(dp(2), dp(2), dp(2), dp(2)) })
-        groups.forEach { (label, spec) -> addView(groupKey(label, spec.first, !showNumberRow()), LinearLayout.LayoutParams(0, dp(29), spec.second).apply { setMargins(dp(3), dp(2), dp(3), dp(2)) }) }
+        groups.forEach { (label, spec) -> addView(groupKey(label, spec.first, !showNumberRow(), if (!showNumberRow()) spec.first else null), LinearLayout.LayoutParams(0, dp(29), spec.second).apply { setMargins(dp(3), dp(2), dp(3), dp(2)) }) }
         if (controls) addView(key("⌫", '⌫'), LinearLayout.LayoutParams(0, dp(29), 1.2f).apply { setMargins(dp(2), dp(2), dp(2), dp(2)) })
     }
     private fun compactT9Row(keys: List<Pair<String, Char>>) = LinearLayout(this).apply {
         orientation = LinearLayout.HORIZONTAL
-        keys.forEach { (letters, number) -> addView(groupKey(letters, number, !showNumberRow()), LinearLayout.LayoutParams(0, dp(42), 1f).apply { setMargins(dp(2), dp(2), dp(2), dp(2)) }) }
+        keys.forEach { (letters, number) -> addView(groupKey(letters, number, !showNumberRow(), if (!showNumberRow()) number else null), LinearLayout.LayoutParams(0, dp(42), 1f).apply { setMargins(dp(2), dp(2), dp(2), dp(2)) }) }
     }
     private fun compactControlsRow() = LinearLayout(this).apply {
         orientation = LinearLayout.HORIZONTAL
-        listOf("⇧" to 'U', "." to '.', "⌫" to '⌫', "↵" to '↵').forEach { (label, action) -> addView(if (action == '.') punctuationKey() else key(label, action), LinearLayout.LayoutParams(0, dp(30), 1f).apply { setMargins(dp(2), dp(2), dp(2), dp(2)) }) }
+        listOf("⇧" to 'U', "⌫" to '⌫').forEach { (label, action) -> addView(key(label, action), LinearLayout.LayoutParams(0, dp(30), 1f).apply { setMargins(dp(2), dp(2), dp(2), dp(2)) }) }
     }
     private fun bottomRow() = LinearLayout(this).apply {
         orientation = LinearLayout.HORIZONTAL
@@ -116,15 +116,16 @@ class T9InputMethodService : InputMethodService() {
         listOf(",", "?", "!", "'", "\"", ":", ";", "-", "(", ")").forEach { mark -> menu.addView(Button(this).apply { text = mark; textSize = 16f; setOnClickListener { commitCurrent(); currentInputConnection?.commitText(mark, 1); popup.dismiss() } }, LinearLayout.LayoutParams(dp(42), dp(42))) }
         popup.showAsDropDown(anchor, -dp(180), -dp(82))
     }
-    private fun groupKey(letters: String, action: Char, numberOnLongPress: Boolean = false) = LetterGroupButton(if (shifted) letters.uppercase(Locale.US) else letters).apply { setOnClickListener { press(action) }; if (numberOnLongPress) setOnLongClickListener { commitCurrent(); currentInputConnection?.commitText(action.toString(), 1); true } }
+    private fun groupKey(letters: String, action: Char, numberOnLongPress: Boolean = false, numberHint: Char? = null) = LetterGroupButton(if (shifted) letters.uppercase(Locale.US) else letters, numberHint).apply { setOnClickListener { press(action) }; if (numberOnLongPress) setOnLongClickListener { commitCurrent(); currentInputConnection?.commitText(action.toString(), 1); true } }
     private fun key(label: String, action: Char) = Button(this).apply { text = label; textSize = if (label.length > 5) 13f else 12f; typeface = Typeface.MONOSPACE; isAllCaps = false; minHeight = 0; minimumHeight = 0; setPadding(0, 0, 0, 0); if (action == '⌫') { setOnTouchListener { _, event -> when (event.action) { MotionEvent.ACTION_DOWN -> { backspaceHeld = true; press('⌫'); handler.postDelayed(repeatBackspace, 350) }; MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> { backspaceHeld = false; handler.removeCallbacks(repeatBackspace) } }; true } } else { setOnClickListener { if (action == ' ') onSpaceTapped() else press(action) }; if (action == '↵') setOnLongClickListener { startActivity(android.content.Intent(this@T9InputMethodService, MainActivity::class.java).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)); true } }; styleButton(this) }
-    private inner class LetterGroupButton(private val letters: String) : View(this@T9InputMethodService) {
+    private inner class LetterGroupButton(private val letters: String, private val numberHint: Char? = null) : View(this@T9InputMethodService) {
         private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = if (darkKeyboard()) Color.WHITE else Color.rgb(38, 50, 56); textSize = dp(14).toFloat(); typeface = Typeface.create(Typeface.MONOSPACE, Typeface.NORMAL); textAlign = Paint.Align.CENTER }
+        private val hintPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = if (darkKeyboard()) Color.rgb(180, 190, 205) else Color.rgb(135, 145, 155); textSize = dp(9).toFloat(); typeface = Typeface.create(Typeface.MONOSPACE, Typeface.NORMAL); textAlign = Paint.Align.LEFT }
         private var longPressTriggered = false
         private val longPress = Runnable { longPressTriggered = performLongClick() }
         init { isClickable = true; isLongClickable = true; background = GradientDrawable().apply { setColor(if (darkKeyboard()) Color.rgb(55, 60, 70) else Color.rgb(238, 241, 243)); cornerRadius = dp(3).toFloat() }; contentDescription = letters; setOnTouchListener { _, event -> when (event.action) { MotionEvent.ACTION_DOWN -> { longPressTriggered = false; isPressed = true; postDelayed(longPress, ViewConfiguration.getLongPressTimeout().toLong()) }; MotionEvent.ACTION_UP -> { removeCallbacks(longPress); isPressed = false; if (!longPressTriggered) performClick() }; MotionEvent.ACTION_CANCEL -> { removeCallbacks(longPress); isPressed = false } }; true } }
         override fun performClick(): Boolean { super.performClick(); return true }
-        override fun onDraw(canvas: Canvas) { super.onDraw(canvas); val baseline = height / 2f - (paint.ascent() + paint.descent()) / 2f; letters.forEachIndexed { index, letter -> canvas.drawText(letter.toString(), width * (index + 1f) / (letters.length + 1f), baseline, paint) } }
+        override fun onDraw(canvas: Canvas) { super.onDraw(canvas); val baseline = height / 2f - (paint.ascent() + paint.descent()) / 2f; numberHint?.let { canvas.drawText(it.toString(), dp(5).toFloat(), dp(12).toFloat(), hintPaint) }; val start = if (numberHint == null) 0f else width * 0.08f; val usable = width - start; letters.forEachIndexed { index, letter -> canvas.drawText(letter.toString(), start + usable * (index + 1f) / (letters.length + 1f), baseline, paint) } }
     }
     private fun createPunctuationView(): View = keyboardContainer().apply {
         listOf(listOf("1","2","3","4","5","6","7","8","9","0"), listOf("!","@","#","$","%","^","&","*","(",")"), listOf("-","_","=","+","[","]","{","}","\\","|"), listOf(";",":","'","\"",",",".","?","/")) .forEach { marks -> addKeyboardRow(punctuationRow(marks)) }
@@ -134,7 +135,7 @@ class T9InputMethodService : InputMethodService() {
     private fun createAlphabeticView(): View = keyboardContainer().apply {
         addKeyboardRow(View(context), dp(46))
         if (showNumberRow()) addKeyboardRow(numberRow())
-        addKeyboardRow(normalLetterRow("qwertyuiop"))
+        addKeyboardRow(normalLetterRow("qwertyuiop", showNumberHints = !showNumberRow()))
         addKeyboardRow(normalLetterRow("asdfghjkl"))
         val last = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
         last.addView(key("⇧", 'U'), LinearLayout.LayoutParams(0, dp(29), 1.2f).apply { setMargins(dp(2),dp(2),dp(2),dp(2)) })
@@ -142,7 +143,7 @@ class T9InputMethodService : InputMethodService() {
         last.addView(key("⌫", '⌫'), LinearLayout.LayoutParams(0, dp(29), 1.2f).apply { setMargins(dp(2),dp(2),dp(2),dp(2)) })
         addKeyboardRow(last); addKeyboardRow(bottomRow())
     }
-    private fun normalLetterRow(letters: String) = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; letters.forEach { letter -> addView(groupKey(letter.toString(), letter), LinearLayout.LayoutParams(0, dp(29), 1f).apply { setMargins(dp(2),dp(2),dp(2),dp(2)) }) } }
+    private fun normalLetterRow(letters: String, showNumberHints: Boolean = false) = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; letters.forEachIndexed { index, letter -> val number = if (showNumberHints) (index + 1).toString().last() else null; addView(groupKey(letter.toString(), letter, showNumberHints, number), LinearLayout.LayoutParams(0, dp(29), 1f).apply { setMargins(dp(2),dp(2),dp(2),dp(2)) }) } }
     private fun punctuationRow(marks: List<String>) = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; marks.forEach { mark -> addView(Button(this@T9InputMethodService).apply { text = mark; textSize = 16f; typeface = Typeface.MONOSPACE; gravity = Gravity.CENTER; isAllCaps = false; minHeight = 0; minimumHeight = 0; setPadding(0, 0, 0, 0); setOnClickListener { currentInputConnection?.commitText(mark, 1); lastCommitWasWord = false }; styleButton(this) }, LinearLayout.LayoutParams(0, dp(30), 1f).apply { setMargins(dp(2),dp(2),dp(2),dp(2)) }) } }
     private fun dp(value: Int) = (value * resources.displayMetrics.density * (keyboardSettings.getInt("keyboard_scale", 100) / 100f)).roundToInt().coerceAtLeast(1)
     private fun showNumberRow() = keyboardSettings.getBoolean("show_number_row", true)
@@ -152,7 +153,7 @@ class T9InputMethodService : InputMethodService() {
     private fun keyboardContainer() = KeyboardContainer()
     private inner class KeyboardContainer : LinearLayout(this@T9InputMethodService) {
         private val sidePadding = dp(6)
-        init { orientation = VERTICAL; gravity = when (keyboardSettings.getString("compact_alignment", "center")) { "lhs" -> Gravity.START; "rhs" -> Gravity.END; else -> Gravity.CENTER_HORIZONTAL }; setBackgroundColor(Color.rgb(24, 28, 38)); setPadding(sidePadding, sidePadding, sidePadding, sidePadding) }
+        init { orientation = VERTICAL; gravity = when (keyboardSettings.getString("compact_alignment", "center")) { "lhs" -> Gravity.START; "rhs" -> Gravity.END; else -> Gravity.CENTER_HORIZONTAL }; setBackgroundColor(Color.rgb(24, 28, 38)); setPadding(sidePadding, sidePadding, sidePadding, sidePadding); requestApplyInsets() }
         override fun onApplyWindowInsets(insets: WindowInsets): WindowInsets { val navigationBottom = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) insets.getInsets(WindowInsets.Type.navigationBars()).bottom else insets.systemWindowInsetBottom; setPadding(sidePadding, sidePadding, sidePadding, sidePadding + navigationBottom); return insets }
     }
     private fun darkKeyboard() = keyboardSettings.getBoolean("dark_keyboard", false)

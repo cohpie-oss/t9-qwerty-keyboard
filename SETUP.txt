@@ -28,7 +28,8 @@ Build an installable APK
    gradle assembleDebug
    Because this project is in OneDrive, its generated Gradle output is placed
    in your Windows temp folder to prevent OneDrive file locks. The ready-to-use
-   APK is also copied to this project folder as T9QwertyKeyboard-debug.apk.
+   APK is copied to this project folder using its release version, for example
+   T9QwertyKeyboard-v1.1.2-debug.apk.
 
 Enable and use it on the phone
 ------------------------------
@@ -54,3 +55,10 @@ Expo note
 Keep using Expo for a companion/settings app if you want, but do not expect an
 Expo build to appear in Android’s keyboard picker. A native Android IME service
 like the one in this project is required.
+
+Release rule
+------------
+Every published update must increment the Android versionCode and versionName,
+add a dated entry to CHANGELOG.md, and publish the APK with a matching versioned
+filename: T9QwertyKeyboard-v<version>-debug.apk. Do not overwrite a prior
+versioned release APK.
