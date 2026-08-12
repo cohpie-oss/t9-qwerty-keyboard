@@ -2,6 +2,11 @@
 
 All notable changes to T9 QWERTY Keyboard are recorded here.
 
+## 1.2.2 — 2026-08-13
+
+- Made same-T9-code alternatives appear when a cursor is deliberately placed inside an existing word, even when the editor does not report a formal text selection.
+- Made typo-tolerant standard-keyboard predictions retain the first typed letter and prefer similar-length words.
+
 ## 1.2.1 — 2026-08-13
 
 - Fixed the standard QWERTY suggestion strip so predictions are visible while typing.
