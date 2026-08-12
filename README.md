@@ -27,6 +27,8 @@ For build, installation, and tester instructions, see [SETUP.txt](SETUP.txt).
 
 The latest test APK is available as `T9QwertyKeyboard-debug.apk` in this repository.
 
+See [CHANGELOG.md](CHANGELOG.md) for update notes.
+
 ## Dictionary
 
 The bundled American-English dictionary is generated from [ESDB / SCOWL](https://github.com/en-wl/wordlist). See [DICTIONARY_LICENSE.txt](app/src/main/assets/DICTIONARY_LICENSE.txt) for licensing details.

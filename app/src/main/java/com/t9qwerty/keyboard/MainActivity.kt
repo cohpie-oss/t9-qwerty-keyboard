@@ -12,6 +12,8 @@ import android.widget.LinearLayout
 import android.widget.SeekBar
 import android.widget.ScrollView
 import android.widget.TextView
+import android.widget.RadioButton
+import android.widget.RadioGroup
 import android.app.Activity
 
 class MainActivity : Activity() {
@@ -32,7 +34,15 @@ class MainActivity : Activity() {
         box.addView(CheckBox(this).apply { text = "Automatically capitalize new sentences"; textSize = 17f; isChecked = settings.getBoolean("auto_capitalize", true); setOnCheckedChangeListener { _, checked -> settings.edit().putBoolean("auto_capitalize", checked).apply() } })
         box.addView(CheckBox(this).apply { text = "Double space inserts a full stop"; textSize = 17f; isChecked = settings.getBoolean("double_space_period", true); setOnCheckedChangeListener { _, checked -> settings.edit().putBoolean("double_space_period", checked).apply() } })
         box.addView(CheckBox(this).apply { text = "Dark keyboard"; textSize = 17f; isChecked = settings.getBoolean("dark_keyboard", false); setOnCheckedChangeListener { _, checked -> settings.edit().putBoolean("dark_keyboard", checked).apply() } })
-        box.addView(TextView(this).apply { text = "Size takes effect the next time you hide and reopen the keyboard. Tap LOCK while typing to switch between T9 search and normal keys." })
+        box.addView(CheckBox(this).apply { text = "Show number row"; textSize = 17f; isChecked = settings.getBoolean("show_number_row", true); setOnCheckedChangeListener { _, checked -> settings.edit().putBoolean("show_number_row", checked).apply() } })
+        box.addView(CheckBox(this).apply { text = "Auto-space after selecting a suggestion"; textSize = 17f; isChecked = settings.getBoolean("auto_space_suggestions", true); setOnCheckedChangeListener { _, checked -> settings.edit().putBoolean("auto_space_suggestions", checked).apply() } })
+        box.addView(CheckBox(this).apply { text = "Compact one-handed layout"; textSize = 17f; isChecked = settings.getBoolean("compact_layout", false); setOnCheckedChangeListener { _, checked -> settings.edit().putBoolean("compact_layout", checked).apply() } })
+        box.addView(TextView(this).apply { text = "Compact layout position"; textSize = 18f })
+        val alignment = RadioGroup(this).apply { orientation = RadioGroup.HORIZONTAL }
+        listOf("lhs" to "LHS", "center" to "Centre", "rhs" to "RHS").forEachIndexed { index, (value, label) -> alignment.addView(RadioButton(this).apply { id = 700 + index; text = label; textSize = 16f; isChecked = settings.getString("compact_alignment", "center") == value }) }
+        alignment.setOnCheckedChangeListener { _, id -> settings.edit().putString("compact_alignment", when (id) { 700 -> "lhs"; 702 -> "rhs"; else -> "center" }).apply() }
+        box.addView(alignment)
+        box.addView(TextView(this).apply { text = "Changes take effect the next time you hide and reopen the keyboard. LHS/RHS positions the compact layout for one-handed typing." })
         val removedBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         val hiddenWords = getSharedPreferences("hidden_words", MODE_PRIVATE)
         fun showRemovedWords() {
