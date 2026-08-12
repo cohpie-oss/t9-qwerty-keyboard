@@ -2,6 +2,10 @@
 
 All notable changes to T9 QWERTY Keyboard are recorded here.
 
+## 1.2.4 — 2026-08-13
+
+- Fixed the hold-and-release punctuation chooser crash by rendering the chooser in the keyboard's own suggestion strip rather than opening a separate Android popup window.
+
 ## 1.2.3 — 2026-08-13
 
 - Replaced the triple-space layout switch with a horizontal swipe across Space.
