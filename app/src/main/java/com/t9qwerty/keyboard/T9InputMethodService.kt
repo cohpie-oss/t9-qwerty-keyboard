@@ -9,9 +9,11 @@ import android.inputmethodservice.InputMethodService
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import android.os.Build
 import android.view.Gravity
 import android.view.View
 import android.view.MotionEvent
+import android.view.WindowInsets
 import android.view.inputmethod.EditorInfo
 import android.text.TextUtils
 import android.widget.Button
@@ -61,7 +63,7 @@ class T9InputMethodService : InputMethodService() {
     override fun onCreateInputView(): View {
         if (punctuationMode) return createPunctuationView()
         if (manual) return createAlphabeticView()
-        return LinearLayout(this).apply {
+        return keyboardContainer().apply {
             orientation = LinearLayout.VERTICAL; setBackgroundColor(Color.rgb(24, 28, 38)); setPadding(dp(6), dp(6), dp(6), dp(6))
             status = TextView(context).apply { setTextColor(Color.WHITE); textSize = 16f; gravity = Gravity.CENTER; text = "" }
             suggestions = LinearLayout(context).apply { gravity = Gravity.CENTER_VERTICAL; orientation = LinearLayout.HORIZONTAL }
@@ -107,13 +109,13 @@ class T9InputMethodService : InputMethodService() {
         override fun performClick(): Boolean { super.performClick(); return true }
         override fun onDraw(canvas: Canvas) { super.onDraw(canvas); val baseline = height / 2f - (paint.ascent() + paint.descent()) / 2f; letters.forEachIndexed { index, letter -> canvas.drawText(letter.toString(), width * (index + 1f) / (letters.length + 1f), baseline, paint) } }
     }
-    private fun createPunctuationView(): View = LinearLayout(this).apply {
+    private fun createPunctuationView(): View = keyboardContainer().apply {
         orientation = LinearLayout.VERTICAL; setBackgroundColor(Color.rgb(24, 28, 38)); setPadding(dp(6), dp(6), dp(6), dp(6))
         listOf(listOf("1","2","3","4","5","6","7","8","9","0"), listOf("!","@","#","$","%","^","&","*","(",")"), listOf("-","_","=","+","[","]","{","}","\\","|"), listOf(";",":","'","\"",",",".","?","/")) .forEach { marks -> addView(punctuationRow(marks)) }
         val bottom = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
         bottom.addView(key("ABC", 'A'), LinearLayout.LayoutParams(0, dp(30), 1.4f).apply { setMargins(dp(2),dp(2),dp(2),dp(2)) }); bottom.addView(key("space", ' '), LinearLayout.LayoutParams(0, dp(30), 5f).apply { setMargins(dp(2),dp(2),dp(2),dp(2)) }); bottom.addView(key("⌫", '⌫'), LinearLayout.LayoutParams(0, dp(30), 1.4f).apply { setMargins(dp(2),dp(2),dp(2),dp(2)) }); bottom.addView(key("↵", '↵'), LinearLayout.LayoutParams(0, dp(30), 1.4f).apply { setMargins(dp(2),dp(2),dp(2),dp(2)) }); addView(bottom)
     }
-    private fun createAlphabeticView(): View = LinearLayout(this).apply {
+    private fun createAlphabeticView(): View = keyboardContainer().apply {
         orientation = LinearLayout.VERTICAL; setBackgroundColor(Color.rgb(24, 28, 38)); setPadding(dp(6), dp(6), dp(6), dp(6))
         addView(View(context), LinearLayout.LayoutParams(-1, dp(46)))
         addView(numberRow())
@@ -128,6 +130,18 @@ class T9InputMethodService : InputMethodService() {
     private fun normalLetterRow(letters: String) = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; letters.forEach { letter -> addView(groupKey(letter.toString(), letter), LinearLayout.LayoutParams(0, dp(29), 1f).apply { setMargins(dp(2),dp(2),dp(2),dp(2)) }) } }
     private fun punctuationRow(marks: List<String>) = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; marks.forEach { mark -> addView(Button(this@T9InputMethodService).apply { text = mark; textSize = 16f; typeface = Typeface.MONOSPACE; gravity = Gravity.CENTER; isAllCaps = false; minHeight = 0; minimumHeight = 0; setPadding(0, 0, 0, 0); setOnClickListener { currentInputConnection?.commitText(mark, 1); lastCommitWasWord = false }; styleButton(this) }, LinearLayout.LayoutParams(0, dp(30), 1f).apply { setMargins(dp(2),dp(2),dp(2),dp(2)) }) } }
     private fun dp(value: Int) = (value * resources.displayMetrics.density * (keyboardSettings.getInt("keyboard_scale", 100) / 100f)).roundToInt().coerceAtLeast(1)
+    private fun keyboardContainer() = LinearLayout(this).apply {
+        orientation = LinearLayout.VERTICAL
+        setBackgroundColor(Color.rgb(24, 28, 38))
+        val sidePadding = dp(6)
+        setPadding(sidePadding, sidePadding, sidePadding, sidePadding)
+        setOnApplyWindowInsetsListener { view, insets ->
+            val navigationBottom = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) insets.getInsets(WindowInsets.Type.navigationBars()).bottom else insets.systemWindowInsetBottom
+            view.setPadding(sidePadding, sidePadding, sidePadding, sidePadding + navigationBottom)
+            insets
+        }
+        requestApplyInsets()
+    }
     private fun darkKeyboard() = keyboardSettings.getBoolean("dark_keyboard", false)
     private fun styleButton(button: Button) { button.setTextColor(if (darkKeyboard()) Color.WHITE else Color.rgb(25, 25, 25)); button.background = GradientDrawable().apply { setColor(if (darkKeyboard()) Color.rgb(55, 60, 70) else Color.rgb(238, 241, 243)); cornerRadius = dp(18).toFloat() } }
 
