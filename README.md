@@ -25,7 +25,7 @@ Android displays a standard warning when enabling any third-party keyboard becau
 
 For build, installation, and tester instructions, see [SETUP.txt](SETUP.txt).
 
-The latest test APK is named by release version (for example, `T9QwertyKeyboard-v1.1.2-debug.apk`) in this repository.
+The latest test APK is named by release version (for example, `T9QwertyKeyboard-v1.1.2-debug.apk`) in the [releases](releases) folder.
 
 See [CHANGELOG.md](CHANGELOG.md) for update notes.
 

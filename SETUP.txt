@@ -28,8 +28,8 @@ Build an installable APK
    gradle assembleDebug
    Because this project is in OneDrive, its generated Gradle output is placed
    in your Windows temp folder to prevent OneDrive file locks. The ready-to-use
-   APK is copied to this project folder using its release version, for example
-   T9QwertyKeyboard-v1.1.2-debug.apk.
+   APK is copied to the releases folder using its release version, for example
+   releases/T9QwertyKeyboard-v1.1.2-debug.apk.
 
 Enable and use it on the phone
 ------------------------------
