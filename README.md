@@ -10,6 +10,8 @@ T9 QWERTY Keyboard is an offline Android keyboard that combines a compact, conne
 - A normal, separated-key QWERTY mode, toggled with a triple tap on Space.
 - Offline English word suggestions, generated from the ESDB / SCOWL word list.
 - Suggestions ranked by words you use most often.
+- Standard-keyboard predictions, typo-tolerant fallback suggestions, British spellings, and common conversational vocabulary.
+- Automatic numeric keypad for number, phone, date, and time fields.
 - Capitalisation, optional automatic sentence capitals, and optional double-space full stops.
 - Punctuation keyboard, long-press punctuation menu, and repeat backspace.
 - Adjustable keyboard size and optional dark theme.

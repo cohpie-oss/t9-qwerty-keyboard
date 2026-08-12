@@ -16,6 +16,7 @@ import android.view.MotionEvent
 import android.view.WindowInsets
 import android.view.ViewConfiguration
 import android.view.inputmethod.EditorInfo
+import android.text.InputType
 import android.text.TextUtils
 import android.widget.Button
 import android.widget.HorizontalScrollView
@@ -50,22 +51,26 @@ class T9InputMethodService : InputMethodService() {
     private var replacementBefore = 0
     private var replacementAfter = 0
     private var suppressWordSuggestionsUntil = 0L
-    private val commonWordRank = mapOf("to" to 100)
+    private var standardPrediction = emptyList<String>()
+    private var standardReplaceBefore = 0
+    private var numericMode = false
+    private val commonWordRank = mapOf("to" to 100, "the" to 90, "and" to 85, "you" to 80, "for" to 75, "with" to 70, "this" to 65, "that" to 65, "hello" to 60, "thanks" to 60, "please" to 55, "lol" to 55, "omg" to 50, "brb" to 45, "idk" to 45, "btw" to 45, "asap" to 40)
     private val wordUsage by lazy { getSharedPreferences("word_usage", Context.MODE_PRIVATE) }
     private val hiddenWords by lazy { getSharedPreferences("hidden_words", Context.MODE_PRIVATE) }
     private val keyboardSettings by lazy { getSharedPreferences("keyboard_settings", Context.MODE_PRIVATE) }
     private val commitManual = Runnable { if (pendingManual.isNotEmpty()) { currentInputConnection?.commitText(pendingManual, 1); pendingManual = ""; lastKey = null } }
     private val repeatBackspace = object : Runnable { override fun run() { if (!backspaceHeld) return; press('⌫'); handler.postDelayed(this, 65) } }
 
-    override fun onCreate() { super.onCreate(); dictionary = assets.open("words.txt").bufferedReader().readLines().map { it.trim().lowercase(Locale.US) }.filter { it.matches(Regex("[a-z]+(?:'[a-z]+)*")) }.distinct(); indexedDictionary = dictionary.map { it to encode(it) } }
+    override fun onCreate() { super.onCreate(); val britishAndCommon = listOf("colour", "colours", "favourite", "favourites", "flavour", "flavours", "honour", "honours", "centre", "centres", "theatre", "theatres", "metre", "metres", "organise", "organised", "organising", "realise", "realised", "realising", "recognise", "recognised", "recognising", "travelling", "travelled", "cancelled", "cheque", "grey", "mum", "mate", "cheers", "yeah", "yep", "nope", "gonna", "wanna", "im", "i'm", "dont", "don't", "cant", "can't", "wont", "won't", "ive", "i've", "youre", "you're", "theyre", "they're", "we're", "weve", "we've", "lol", "omg", "brb", "idk", "btw", "asap"); dictionary = (assets.open("words.txt").bufferedReader().readLines().map { it.trim().lowercase(Locale.US) }.filter { it.matches(Regex("[a-z]+(?:'[a-z]+)*")) } + britishAndCommon).distinct(); indexedDictionary = dictionary.map { it to encode(it) } }
 
-    override fun onStartInputView(info: EditorInfo, restarting: Boolean) { super.onStartInputView(info, restarting); setInputView(onCreateInputView()) }
+    override fun onStartInputView(info: EditorInfo, restarting: Boolean) { super.onStartInputView(info, restarting); val inputClass = info.inputType and InputType.TYPE_MASK_CLASS; numericMode = inputClass == InputType.TYPE_CLASS_NUMBER || inputClass == InputType.TYPE_CLASS_PHONE || inputClass == InputType.TYPE_CLASS_DATETIME; setInputView(onCreateInputView()) }
 
     override fun onCreateInputView(): View {
+        if (numericMode) return createNumericView()
         if (punctuationMode) return createPunctuationView()
         if (manual) return createAlphabeticView()
         return keyboardContainer().apply {
-            status = TextView(context).apply { setTextColor(Color.WHITE); textSize = 16f; gravity = Gravity.CENTER; text = "" }
+            status = TextView(context).apply { setTextColor(if (darkKeyboard()) Color.LTGRAY else Color.DKGRAY); textSize = 12f; gravity = Gravity.CENTER; text = "Suggestions" }
             suggestions = LinearLayout(context).apply { gravity = Gravity.CENTER_VERTICAL; orientation = LinearLayout.HORIZONTAL }
             addKeyboardRow(HorizontalScrollView(context).apply { isHorizontalScrollBarEnabled = false; addView(suggestions) }, dp(46))
             if (showNumberRow()) addKeyboardRow(numberRow())
@@ -82,6 +87,12 @@ class T9InputMethodService : InputMethodService() {
             addKeyboardRow(bottomRow())
             refresh()
         }
+    }
+
+    private fun createNumericView(): View = keyboardContainer().apply {
+        val rows = listOf(listOf("1", "2", "3"), listOf("4", "5", "6"), listOf("7", "8", "9"), listOf("-", "0", "⌫"))
+        rows.forEach { row -> addKeyboardRow(LinearLayout(this@T9InputMethodService).apply { orientation = LinearLayout.HORIZONTAL; row.forEach { mark -> addView(if (mark == "⌫") key(mark, '⌫') else Button(this@T9InputMethodService).apply { text = mark; textSize = 19f; isAllCaps = false; setOnClickListener { currentInputConnection?.commitText(mark, 1) }; styleButton(this) }, LinearLayout.LayoutParams(0, dp(40), 1f).apply { setMargins(dp(3), dp(3), dp(3), dp(3)) }) } }) }
+        addKeyboardRow(LinearLayout(this@T9InputMethodService).apply { orientation = LinearLayout.HORIZONTAL; addView(key(".", '.'), LinearLayout.LayoutParams(0, dp(32), 1f).apply { setMargins(dp(3), dp(3), dp(3), dp(3)) }); addView(key("↵", '↵'), LinearLayout.LayoutParams(0, dp(32), 2f).apply { setMargins(dp(3), dp(3), dp(3), dp(3)) }) })
     }
 
     private fun numberRow() = LinearLayout(this).apply {
@@ -163,14 +174,14 @@ class T9InputMethodService : InputMethodService() {
         clearWordSuggestions()
         when (key) {
             in '1'..'9' -> if (manual) manualPress(key) else { clearWordSuggestions(); pattern += key; refresh() }
-            '⌫' -> { if (manual) { handler.removeCallbacks(commitManual); if (pendingManual.isNotEmpty()) pendingManual = "" else currentInputConnection?.deleteSurroundingText(1, 0) } else if (pattern.isNotEmpty()) { pattern = pattern.dropLast(1); refresh() } else currentInputConnection?.deleteSurroundingText(1, 0) }
+            '⌫' -> { if (manual) { handler.removeCallbacks(commitManual); if (pendingManual.isNotEmpty()) pendingManual = "" else currentInputConnection?.deleteSurroundingText(1, 0); updateStandardPredictions() } else if (pattern.isNotEmpty()) { pattern = pattern.dropLast(1); refresh() } else currentInputConnection?.deleteSurroundingText(1, 0) }
             'L' -> toggleKeyboardMode()
-            ' ' -> { commitCurrent(); insertSpaceOrPeriod(); lastCommitWasWord = false }
+            ' ' -> { commitCurrent(); standardPrediction = emptyList(); insertSpaceOrPeriod(); lastCommitWasWord = false; refresh() }
             '↵' -> { commitCurrent(); currentInputConnection?.sendKeyEvent(android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.KEYCODE_ENTER)); lastCommitWasWord = false }
             '.' -> { commitCurrent(); currentInputConnection?.commitText(".", 1); lastCommitWasWord = false }
             'A' -> { punctuationMode = false; setInputView(onCreateInputView()) }
             'U' -> { shifted = !shifted; setInputView(onCreateInputView()) }
-            in 'a'..'z' -> { currentInputConnection?.commitText(outputWord(key.toString()), 1); lastCommitWasWord = true }
+            in 'a'..'z' -> { currentInputConnection?.commitText(outputWord(key.toString()), 1); lastCommitWasWord = true; updateStandardPredictions() }
         }
     }
     private fun manualPress(key: Char) {
@@ -188,7 +199,8 @@ class T9InputMethodService : InputMethodService() {
     private fun matches(): List<String> {
         val exact = indexedDictionary.filter { it.second == pattern }
         val candidates = (if (exact.isNotEmpty()) exact else indexedDictionary.filter { it.second.startsWith(pattern) }).filterNot { hiddenWords.getBoolean(it.first, false) }
-        return candidates.sortedWith(compareByDescending<Pair<String, String>> { usageScore(it.first) }.thenBy { it.first.length }.thenBy { it.first }).take(40).map { it.first }
+        val result = candidates.sortedWith(compareByDescending<Pair<String, String>> { usageScore(it.first) }.thenBy { it.first.length }.thenBy { it.first }).take(40).map { it.first }
+        return if (result.isNotEmpty()) result else dictionary.filterNot { hiddenWords.getBoolean(it, false) }.sortedWith(compareByDescending<String> { usageScore(it) }.thenBy { it.length }).take(8)
     }
     private fun encode(word: String) = word.mapNotNull { wordDigits[it] }.joinToString("")
     private fun usageScore(word: String) = commonWordRank.getOrDefault(word, 0) + wordUsage.getInt(word, 0)
@@ -197,7 +209,10 @@ class T9InputMethodService : InputMethodService() {
     private fun commitSuggestedWord(word: String) { val before = currentInputConnection?.getTextBeforeCursor(64, 0)?.toString().orEmpty(); if (lastCommitWasWord || before.lastOrNull()?.isLetterOrDigit() == true) currentInputConnection?.commitText(" ", 1); currentInputConnection?.commitText(outputWord(word), 1); val autoSpace = keyboardSettings.getBoolean("auto_space_suggestions", true); if (autoSpace) currentInputConnection?.commitText(" ", 1); recordUsage(word); lastCommitWasWord = !autoSpace }
     private fun replaceCurrentWord(word: String) { val before = replacementBefore; val after = replacementAfter; clearWordSuggestions(); currentInputConnection?.deleteSurroundingText(before, after); currentInputConnection?.commitText(outputWord(word), 1); recordUsage(word); lastCommitWasWord = true; refresh() }
     private fun codeMatches(word: String): List<String> { val code = encode(word); return indexedDictionary.filter { it.second == code && it.first != word && !hiddenWords.getBoolean(it.first, false) }.sortedWith(compareByDescending<Pair<String, String>> { usageScore(it.first) }.thenBy { it.first }).take(40).map { it.first } }
+    private fun updateStandardPredictions() { if (!manual || punctuationMode) return; val before = currentInputConnection?.getTextBeforeCursor(64, 0)?.toString().orEmpty(); val prefix = before.takeLastWhile { it.isLetter() || it == '\'' }.lowercase(Locale.US); if (prefix.length < 1) { standardPrediction = emptyList(); standardReplaceBefore = 0; refresh(); return }; standardReplaceBefore = prefix.length; val prefixMatches = dictionary.filter { it.startsWith(prefix) && it != prefix && !hiddenWords.getBoolean(it, false) }.sortedWith(compareByDescending<String> { usageScore(it) }.thenBy { it.length }.thenBy { it }).take(10); standardPrediction = if (prefixMatches.isNotEmpty()) prefixMatches else dictionary.filter { levenshtein(it, prefix) <= 2 && !hiddenWords.getBoolean(it, false) }.sortedWith(compareByDescending<String> { usageScore(it) }.thenBy { levenshtein(it, prefix) }.thenBy { it.length }).take(6); refresh() }
+    private fun levenshtein(left: String, right: String): Int { if (left == right) return 0; if (left.length > 18 || right.length > 18) return 99; var previous = IntArray(right.length + 1) { it }; left.forEachIndexed { i, l -> val current = IntArray(right.length + 1); current[0] = i + 1; right.forEachIndexed { j, r -> current[j + 1] = minOf(current[j] + 1, previous[j + 1] + 1, previous[j] + if (l == r) 0 else 1) }; previous = current }; return previous[right.length] }
+    private fun commitStandardPrediction(word: String) { val replace = standardReplaceBefore; standardPrediction = emptyList(); standardReplaceBefore = 0; currentInputConnection?.deleteSurroundingText(replace, 0); currentInputConnection?.commitText(outputWord(word), 1); recordUsage(word); lastCommitWasWord = true; refresh() }
     private fun showCodeMatchesAtCursor() { if (System.currentTimeMillis() < suppressWordSuggestionsUntil || manual || punctuationMode || pattern.isNotEmpty()) return; val connection = currentInputConnection ?: return; val selected = connection.getSelectedText(0)?.toString().orEmpty(); val before = connection.getTextBeforeCursor(64, 0)?.toString().orEmpty(); val after = connection.getTextAfterCursor(64, 0)?.toString().orEmpty(); val left = if (selected.isNotEmpty()) "" else before.takeLastWhile { it.isLetter() || it == '\'' }; val right = if (selected.isNotEmpty()) "" else after.takeWhile { it.isLetter() || it == '\'' }; val word = (if (selected.isNotEmpty()) selected else left + right).lowercase(Locale.US); if (!word.matches(Regex("[a-z]+(?:'[a-z]+)*"))) return; replacementBefore = if (selected.isNotEmpty()) 0 else left.length; replacementAfter = if (selected.isNotEmpty()) 0 else right.length; wordSuggestions = codeMatches(word); refresh() }
     override fun onUpdateSelection(oldSelStart: Int, oldSelEnd: Int, newSelStart: Int, newSelEnd: Int, candidatesStart: Int, candidatesEnd: Int) { super.onUpdateSelection(oldSelStart, oldSelEnd, newSelStart, newSelEnd, candidatesStart, candidatesEnd); showCodeMatchesAtCursor() }
-    private fun refresh() { status?.text = ""; suggestions?.removeAllViews(); val words = if (!manual && pattern.isNotEmpty()) matches() else wordSuggestions; words.forEach { word -> suggestions?.addView(Button(this).apply { text = outputWord(word); textSize = 15f; isAllCaps = false; isSingleLine = true; ellipsize = TextUtils.TruncateAt.END; minimumWidth = 0; minWidth = 0; setPadding(dp(14), 0, dp(14), 0); setOnClickListener { if (pattern.isNotEmpty()) { commitSuggestedWord(word); pattern = ""; clearWordSuggestions(); refresh() } else replaceCurrentWord(word) }; setOnLongClickListener { hiddenWords.edit().putBoolean(word, true).apply(); wordSuggestions = wordSuggestions.filterNot { it == word }; Toast.makeText(this@T9InputMethodService, "Removed $word", Toast.LENGTH_SHORT).show(); refresh(); true }; styleButton(this) }, LinearLayout.LayoutParams(-2, -1).apply { setMargins(dp(2), 0, dp(2), 0) }) } }
+    private fun refresh() { val words = if (!manual && pattern.isNotEmpty()) matches() else if (manual && standardPrediction.isNotEmpty()) standardPrediction else wordSuggestions; status?.text = when { !manual && pattern.isNotEmpty() -> "T9 suggestions"; manual && standardPrediction.isNotEmpty() -> "Predictions"; wordSuggestions.isNotEmpty() -> "Same T9 code"; else -> "Suggestions" }; suggestions?.removeAllViews(); words.forEach { word -> suggestions?.addView(Button(this).apply { text = outputWord(word); textSize = 15f; isAllCaps = false; isSingleLine = true; ellipsize = TextUtils.TruncateAt.END; minimumWidth = 0; minWidth = 0; setPadding(dp(14), 0, dp(14), 0); setOnClickListener { if (pattern.isNotEmpty()) { commitSuggestedWord(word); pattern = ""; clearWordSuggestions(); refresh() } else if (manual && standardPrediction.isNotEmpty()) commitStandardPrediction(word) else replaceCurrentWord(word) }; setOnLongClickListener { hiddenWords.edit().putBoolean(word, true).apply(); wordSuggestions = wordSuggestions.filterNot { it == word }; standardPrediction = standardPrediction.filterNot { it == word }; Toast.makeText(this@T9InputMethodService, "Removed $word", Toast.LENGTH_SHORT).show(); refresh(); true }; styleButton(this) }, LinearLayout.LayoutParams(-2, -1).apply { setMargins(dp(2), 0, dp(2), 0) }) } }
 }

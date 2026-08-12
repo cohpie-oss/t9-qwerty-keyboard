@@ -2,6 +2,14 @@
 
 All notable changes to T9 QWERTY Keyboard are recorded here.
 
+## 1.2.0 — 2026-08-13
+
+- Added labelled, more visible T9, prediction, and same-code suggestion states.
+- Added standard QWERTY keyboard predictions, including typo-tolerant fallback suggestions.
+- Added British spellings, common conversational words, and popular acronyms to the local dictionary.
+- Ensured T9 search always falls back to useful common suggestions instead of showing an empty strip.
+- Added an automatic numeric keypad for number, phone, date, and time fields.
+
 ## 1.1.4 — 2026-08-12
 
 - Corrected hidden-number long press in normal QWERTY mode to enter the displayed number rather than the letter.
