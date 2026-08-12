@@ -2,6 +2,10 @@
 
 All notable changes to T9 QWERTY Keyboard are recorded here.
 
+## 1.1.4 — 2026-08-12
+
+- Corrected hidden-number long press in normal QWERTY mode to enter the displayed number rather than the letter.
+
 ## 1.1.3 — 2026-08-12
 
 - Fixed long-press number entry on the normal QWERTY top row when the number row is hidden.
