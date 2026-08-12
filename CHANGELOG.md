@@ -2,6 +2,15 @@
 
 All notable changes to T9 QWERTY Keyboard are recorded here.
 
+## 1.2.1 — 2026-08-13
+
+- Fixed the standard QWERTY suggestion strip so predictions are visible while typing.
+- Reduced key handling overhead in standard mode to improve responsiveness.
+- Added closest T9-code fallback candidates that favour similar-length words matching most entered groups.
+- Enabled same-code alternatives for explicitly selected words in either keyboard mode.
+- Made Backspace delete an active text selection in one action.
+- Made punctuation remove a preceding space, attach to the previous word, then add one following space.
+
 ## 1.2.0 — 2026-08-13
 
 - Added labelled, more visible T9, prediction, and same-code suggestion states.

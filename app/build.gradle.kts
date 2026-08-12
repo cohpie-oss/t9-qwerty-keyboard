@@ -6,7 +6,7 @@ plugins {
 layout.buildDirectory.set(File(System.getProperty("java.io.tmpdir"), "t9-qwerty-build/app"))
 
 android { namespace = "com.t9qwerty.keyboard"; compileSdk = 35
-    defaultConfig { applicationId = "com.t9qwerty.keyboard"; minSdk = 23; targetSdk = 35; versionCode = 7; versionName = "1.2.0" }
+    defaultConfig { applicationId = "com.t9qwerty.keyboard"; minSdk = 23; targetSdk = 35; versionCode = 8; versionName = "1.2.1" }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
 }
 
