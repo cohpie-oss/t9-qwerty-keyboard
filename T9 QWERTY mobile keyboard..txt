@@ -1,0 +1,25 @@
+T9 QWERTY mobile keyboard.
+ 1   2    3
+QWE-RTYU-IOP
+
+ 4   5   6
+ASD-FGH-JKL
+
+ 7  8   9
+ZX-CVB-NM
+
+QWE-RTYU-IOP
+ASD-FGH-JKL
+ZX-CVB-NM
+space
+
+use the https://open-dictionary.github.io/ as the English dictionary.
+
+like t9 keyboard this keyboard will use the buttons as a type of search function.
+"sphinx of black quartz judge my vow" will be "435397 space 35 space 86486 space 124224 space 62451 space 92 space 831"
+
+when the number 4 is pressed it should narrow down the dictionary to a,s and d. then when 3 is pressed it should narrow down to ai, ao, ap, si, so, sp, di, do, dp.
+it should move completed words to the top of the suggestion list.
+
+there should also be a lock button on the keyboard which allows user to manually type. e.g "hi" is typed as "5553".
+

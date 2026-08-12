@@ -1,0 +1,56 @@
+T9 QWERTY KEYBOARD — SETUP AND INSTALL
+========================================
+
+What this is
+------------
+This is a native Android Input Method Editor (IME): a keyboard that Android can
+show in every text field. Expo is excellent for normal apps, but it cannot by
+itself create a system keyboard. This project deliberately uses Kotlin + Gradle
+for that Android-only piece.
+
+You need
+--------
+1. A Windows, Mac, or Linux computer.
+2. Android Studio (install the standard Android SDK during setup).
+3. An Android phone with Developer options and USB debugging enabled, OR an
+   Android emulator.
+
+Build an installable APK
+------------------------
+1. Open Android Studio.
+2. Choose Open and select this T9 QWERTY folder.
+3. Allow Android Studio to download the Gradle/Android dependencies when asked.
+4. Connect your phone by USB and accept its debugging prompt, or start an
+   emulator in Android Studio.
+5. Press the green Run button. Android Studio installs the debug app.
+
+   Alternative command if you have Gradle installed:
+   gradle assembleDebug
+   Because this project is in OneDrive, its generated Gradle output is placed
+   in your Windows temp folder to prevent OneDrive file locks. The ready-to-use
+   APK is also copied to this project folder as T9QwertyKeyboard-debug.apk.
+
+Enable and use it on the phone
+------------------------------
+1. Open the installed “T9 QWERTY Keyboard” app.
+2. Tap “Enable keyboard in Android Settings”.
+3. Turn on T9 QWERTY Keyboard and accept Android’s keyboard warning. This app
+   has no Internet permission and does not send typing data anywhere.
+4. Open any text app, tap a text field, and use Android’s keyboard switcher
+   (keyboard icon/notification) to choose T9 QWERTY Keyboard.
+5. Use connected letter-group keys to search words; tap suggestions. Tap LOCK
+   to switch to a normal separated-letter keyboard.
+
+Dictionary notes
+----------------
+The included assets/words.txt contains a 108,722-word American-English list
+generated from ESDB / SCOWL v2 at size 60. Its vetted inflections replace the
+previous Open Dictionary word index. Source and license information is in
+app/src/main/assets/DICTIONARY_LICENSE.txt. The keyboard’s matching code is
+local and offline once the list is bundled.
+
+Expo note
+---------
+Keep using Expo for a companion/settings app if you want, but do not expect an
+Expo build to appear in Android’s keyboard picker. A native Android IME service
+like the one in this project is required.

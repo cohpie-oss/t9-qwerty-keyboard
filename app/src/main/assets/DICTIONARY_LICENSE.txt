@@ -1,0 +1,10 @@
+Dictionary source: English Speller Database (ESDB / SCOWL v2)
+Project: https://github.com/en-wl/wordlist
+Source branch: v2
+Generated list: size 60, American spelling (A), variant level 1, de-accented,
+with abbreviations excluded.
+
+ESDB is derived from many sources under a BSD-compatible license. Its combined
+work is freely available under an MIT-like license. See the upstream Copyright
+file for the complete attribution and license text:
+https://github.com/en-wl/wordlist/blob/v2/Copyright

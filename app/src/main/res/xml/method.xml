@@ -1,0 +1,4 @@
+<input-method xmlns:android="http://schemas.android.com/apk/res/android" android:settingsActivity="com.t9qwerty.keyboard.MainActivity">
+    <subtype android:label="English" android:imeSubtypeLocale="en_US" android:imeSubtypeMode="keyboard" />
+</input-method>
+
