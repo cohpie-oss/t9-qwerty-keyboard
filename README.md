@@ -2,6 +2,8 @@
 
 T9 QWERTY Keyboard is an offline Android keyboard that combines a compact, connected-key T9 layout with an optional full QWERTY layout. It is designed for fast thumb typing while retaining familiar QWERTY letter positions.
 
+> **AI-assisted development disclosure:** This project was developed with substantial assistance from **Codex**, OpenAI's AI coding agent. If you prefer not to use software created with AI assistance, please do not install or contribute to this project.
+
 ## Features
 
 - Connected-key T9 word search based on custom QWERTY letter groups.
