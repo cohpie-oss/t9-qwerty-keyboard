@@ -45,8 +45,10 @@ class T9InputMethodService : InputMethodService() {
     private var lastCommitWasWord = false
     private var backspaceHeld = false
     private var shifted = false
-    private var lastSpaceTap = 0L
-    private var spaceTapCount = 0
+    private var punctuationGesturePopup: PopupWindow? = null
+    private var punctuationMenuLeft = 0
+    private var punctuationMenuWidth = 0
+    private var punctuationMenuButtons = emptyList<Button>()
     private var wordSuggestions = emptyList<String>()
     private var replacementBefore = 0
     private var replacementAfter = 0
@@ -121,18 +123,34 @@ class T9InputMethodService : InputMethodService() {
         orientation = LinearLayout.HORIZONTAL
         val margin = dp(2)
         addView(punctuationKey(), LinearLayout.LayoutParams(0, dp(27), 1.25f).apply { setMargins(margin, margin, margin, margin) })
-        addView(key("space", ' '), LinearLayout.LayoutParams(0, dp(27), 6f).apply { setMargins(margin, margin, margin, margin) })
+        addView(spaceKey(), LinearLayout.LayoutParams(0, dp(27), 6f).apply { setMargins(margin, margin, margin, margin) })
         addView(key("↵", '↵'), LinearLayout.LayoutParams(0, dp(27), 1.25f).apply { setMargins(margin, margin, margin, margin) })
     }
-    private fun punctuationKey() = Button(this).apply { text = "."; textSize = 14f; isAllCaps = false; minHeight = 0; minimumHeight = 0; setPadding(0, 0, 0, 0); setOnClickListener { val now = System.currentTimeMillis(); if (now - lastPunctuationTap < 350) { currentInputConnection?.deleteSurroundingText(1, 0); punctuationMode = true; setInputView(onCreateInputView()) } else press('.'); lastPunctuationTap = now }; setOnLongClickListener { showPunctuationMenu(this); true }; styleButton(this) }
-    private fun showPunctuationMenu(anchor: View) {
-        val menu = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setBackgroundColor(Color.DKGRAY); setPadding(dp(4), dp(4), dp(4), dp(4)) }
-        val popup = PopupWindow(menu, -2, -2, true).apply { elevation = dp(6).toFloat() }
-        listOf(",", "?", "!", "'", "\"", ":", ";", "-", "(", ")").forEach { mark -> menu.addView(Button(this).apply { text = mark; textSize = 16f; setOnClickListener { commitCurrent(); commitPunctuation(mark); popup.dismiss() } }, LinearLayout.LayoutParams(dp(42), dp(42))) }
-        popup.showAsDropDown(anchor, -dp(180), -dp(82))
+    private fun spaceKey() = Button(this).apply { text = "space"; textSize = 13f; typeface = Typeface.MONOSPACE; isAllCaps = false; minHeight = 0; minimumHeight = 0; setPadding(0, 0, 0, 0); var startX = 0f; setOnTouchListener { _, event -> when (event.action) { MotionEvent.ACTION_DOWN -> { startX = event.x; isPressed = true }; MotionEvent.ACTION_UP -> { isPressed = false; if (kotlin.math.abs(event.x - startX) >= dp(36)) toggleKeyboardMode() else press(' ') }; MotionEvent.ACTION_CANCEL -> isPressed = false }; true }; styleButton(this) }
+    private fun punctuationKey() = Button(this).apply { text = "."; textSize = 14f; isAllCaps = false; minHeight = 0; minimumHeight = 0; setPadding(0, 0, 0, 0); var holding = false; val hold = Runnable { holding = true; showPunctuationGesture(this) }; setOnTouchListener { _, event -> when (event.action) { MotionEvent.ACTION_DOWN -> { holding = false; postDelayed(hold, ViewConfiguration.getLongPressTimeout().toLong()); isPressed = true }; MotionEvent.ACTION_MOVE -> if (holding) updatePunctuationHighlight(event.rawX); MotionEvent.ACTION_UP -> { removeCallbacks(hold); isPressed = false; if (holding) chooseHeldPunctuation(event.rawX) else handlePunctuationTap() }; MotionEvent.ACTION_CANCEL -> { removeCallbacks(hold); punctuationGesturePopup?.dismiss(); punctuationGesturePopup = null; isPressed = false } }; true }; styleButton(this) }
+    private fun handlePunctuationTap() { val now = System.currentTimeMillis(); if (now - lastPunctuationTap < 350) { currentInputConnection?.deleteSurroundingText(1, 0); punctuationMode = true; setInputView(onCreateInputView()) } else press('.'); lastPunctuationTap = now }
+    private fun showPunctuationGesture(anchor: View) {
+        val marks = listOf(",", "?", "!", "'", "\"", ":", ";", "-", "(", ")")
+        val menu = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setBackgroundColor(Color.DKGRAY); setPadding(dp(3), dp(3), dp(3), dp(3)) }
+        punctuationMenuButtons = marks.map { mark ->
+            Button(this).apply {
+                text = mark; textSize = 16f; isAllCaps = false; setTextColor(Color.WHITE)
+                background = GradientDrawable().apply { setColor(Color.rgb(62, 68, 80)); cornerRadius = dp(12).toFloat() }
+                menu.addView(this, LinearLayout.LayoutParams(dp(38), dp(40)).apply { setMargins(dp(1), 0, dp(1), 0) })
+            }
+        }
+        punctuationMenuWidth = dp(3) * 2 + marks.size * dp(40)
+        val location = IntArray(2); anchor.getLocationOnScreen(location)
+        punctuationMenuLeft = (location[0] + anchor.width / 2 - punctuationMenuWidth / 2).coerceIn(0, resources.displayMetrics.widthPixels - punctuationMenuWidth)
+        val popup = PopupWindow(menu, punctuationMenuWidth, dp(46), false).apply { isOutsideTouchable = false; isFocusable = false; elevation = dp(8).toFloat() }
+        punctuationGesturePopup = popup
+        popup.showAtLocation(anchor, Gravity.TOP or Gravity.START, punctuationMenuLeft, (location[1] - dp(52)).coerceAtLeast(0))
     }
+    private fun punctuationIndex(rawX: Float) = (((rawX.toInt() - punctuationMenuLeft - dp(3)) / dp(40)).coerceIn(0, punctuationMenuButtons.lastIndex))
+    private fun updatePunctuationHighlight(rawX: Float) { val selected = punctuationIndex(rawX); punctuationMenuButtons.forEachIndexed { index, button -> button.background = GradientDrawable().apply { setColor(if (index == selected) Color.rgb(100, 130, 190) else Color.rgb(62, 68, 80)); cornerRadius = dp(12).toFloat() } } }
+    private fun chooseHeldPunctuation(rawX: Float) { val marks = listOf(",", "?", "!", "'", "\"", ":", ";", "-", "(", ")"); val mark = marks[punctuationIndex(rawX)]; punctuationGesturePopup?.dismiss(); punctuationGesturePopup = null; commitCurrent(); commitPunctuation(mark) }
     private fun groupKey(letters: String, action: Char, numberOnLongPress: Boolean = false, numberHint: Char? = null) = LetterGroupButton(if (shifted) letters.uppercase(Locale.US) else letters, numberHint, if (numberOnLongPress) ({ commitCurrent(); currentInputConnection?.commitText((numberHint ?: action).toString(), 1) }) else null).apply { setOnClickListener { press(action) } }
-    private fun key(label: String, action: Char) = Button(this).apply { text = label; textSize = if (label.length > 5) 13f else 12f; typeface = Typeface.MONOSPACE; isAllCaps = false; minHeight = 0; minimumHeight = 0; setPadding(0, 0, 0, 0); if (action == '⌫') { setOnTouchListener { _, event -> when (event.action) { MotionEvent.ACTION_DOWN -> { backspaceHeld = true; press('⌫'); handler.postDelayed(repeatBackspace, 350) }; MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> { backspaceHeld = false; handler.removeCallbacks(repeatBackspace) } }; true } } else { setOnClickListener { if (action == ' ') onSpaceTapped() else press(action) }; if (action == '↵') setOnLongClickListener { startActivity(android.content.Intent(this@T9InputMethodService, MainActivity::class.java).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)); true } }; styleButton(this) }
+    private fun key(label: String, action: Char) = Button(this).apply { text = label; textSize = if (label.length > 5) 13f else 12f; typeface = Typeface.MONOSPACE; isAllCaps = false; minHeight = 0; minimumHeight = 0; setPadding(0, 0, 0, 0); if (action == '⌫') { setOnTouchListener { _, event -> when (event.action) { MotionEvent.ACTION_DOWN -> { backspaceHeld = true; press('⌫'); handler.postDelayed(repeatBackspace, 350) }; MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> { backspaceHeld = false; handler.removeCallbacks(repeatBackspace) } }; true } } else { setOnClickListener { press(action) }; if (action == '↵') setOnLongClickListener { startActivity(android.content.Intent(this@T9InputMethodService, MainActivity::class.java).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)); true } }; styleButton(this) }
     private inner class LetterGroupButton(private val letters: String, private val numberHint: Char? = null, private val onNumberLongPress: (() -> Unit)? = null) : View(this@T9InputMethodService) {
         private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = if (darkKeyboard()) Color.WHITE else Color.rgb(38, 50, 56); textSize = dp(14).toFloat(); typeface = Typeface.create(Typeface.MONOSPACE, Typeface.NORMAL); textAlign = Paint.Align.CENTER }
         private val hintPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = if (darkKeyboard()) Color.rgb(180, 190, 205) else Color.rgb(135, 145, 155); textSize = dp(9).toFloat(); typeface = Typeface.create(Typeface.MONOSPACE, Typeface.NORMAL); textAlign = Paint.Align.LEFT }
@@ -194,7 +212,6 @@ class T9InputMethodService : InputMethodService() {
         val letter = letters[tapIndex].toString()
         pendingManual = if (pendingManual.isEmpty()) outputWord(letter) else letter; lastKey = key; handler.postDelayed(commitManual, 700); refresh()
     }
-    private fun onSpaceTapped() { val now = System.currentTimeMillis(); spaceTapCount = if (now - lastSpaceTap < 350) spaceTapCount + 1 else 1; lastSpaceTap = now; if (spaceTapCount == 3) { currentInputConnection?.deleteSurroundingText(2, 0); spaceTapCount = 0; toggleKeyboardMode() } else press(' ') }
     private fun toggleKeyboardMode() { handler.removeCallbacks(commitManual); pattern = ""; clearWordSuggestions(); if (pendingManual.isNotEmpty()) currentInputConnection?.commitText(pendingManual, 1); pendingManual = ""; manual = !manual; lastKey = null; setInputView(onCreateInputView()) }
     private fun shouldAutoCapitalize(): Boolean { if (!keyboardSettings.getBoolean("auto_capitalize", true)) return false; val before = currentInputConnection?.getTextBeforeCursor(256, 0)?.toString().orEmpty(); val last = before.trimEnd().lastOrNull(); return last == null || last == '.' || last == '!' || last == '?' }
     private fun outputWord(word: String) = if (shifted || shouldAutoCapitalize()) word.replaceFirstChar { it.uppercase(Locale.US) } else word

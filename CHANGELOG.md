@@ -2,6 +2,11 @@
 
 All notable changes to T9 QWERTY Keyboard are recorded here.
 
+## 1.2.3 — 2026-08-13
+
+- Replaced the triple-space layout switch with a horizontal swipe across Space.
+- Added a hold-and-release punctuation chooser: hold the punctuation key, slide to a symbol, and release to enter it.
+
 ## 1.2.2 — 2026-08-13
 
 - Made same-T9-code alternatives appear when a cursor is deliberately placed inside an existing word, even when the editor does not report a formal text selection.
