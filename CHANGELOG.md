@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.6 — 2026-08-17
+
+- Kept the punctuation key as a non-destructive punctuation-suggestion chooser: tap it to browse symbols, then tap one to enter it.
+- Prioritised personally frequent words above the built-in default ranking.
+- Disabled automatic suggestion spaces and double-space full stops in email-address fields.
+- Replaced the caps toggle with visible Off, one-character, and caps-lock states; suggestions use the selected case.
+
 All notable changes to T9 QWERTY Keyboard are recorded here.
 
 ## 1.2.5 — 2026-08-13
