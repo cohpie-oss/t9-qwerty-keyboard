@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.7 — 2026-08-17
+
+- Made the punctuation key act like a predictive code: Space accepts the default full stop, while tapping a strip suggestion chooses another mark.
+
 ## 1.2.6 — 2026-08-17
 
 - Kept the punctuation key as a non-destructive punctuation-suggestion chooser: tap it to browse symbols, then tap one to enter it.

@@ -172,6 +172,14 @@ class T9InputMethodService : InputMethodService() {
     private fun styleButton(button: Button) { button.setTextColor(if (darkKeyboard()) Color.WHITE else Color.rgb(25, 25, 25)); button.background = GradientDrawable().apply { setColor(if (darkKeyboard()) Color.rgb(55, 60, 70) else Color.rgb(238, 241, 243)); cornerRadius = dp(18).toFloat() } }
 
     private fun press(key: Char) {
+        // The punctuation key behaves like a predictive code: Space accepts its
+        // default candidate (a full stop), while a tap in the strip chooses another mark.
+        if (punctuationSuggestions && key == ' ') {
+            punctuationSuggestions = false
+            commitCurrent()
+            commitPunctuation(".")
+            return
+        }
         clearWordSuggestions()
         when (key) {
             in '1'..'9' -> if (manual) manualPress(key) else { clearWordSuggestions(); pattern += key; refresh() }
